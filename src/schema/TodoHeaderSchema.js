@@ -1,25 +1,28 @@
 const { Joi } = require('celebrate')
 
 const searchSchema = Joi.object().keys({
-    todo_name: Joi.string().max(200).optional(),
+    title: Joi.string().max(200).optional(),
 }).unknown(true)
 
 const insertSchema = Joi.object().keys({
-    todo_header_id : Joi.string().max(50).required(),
-    todo_name : Joi.string().max(200).required(),
+    title : Joi.string().max(200).required(),
+    description : Joi.string().max(200).required(),
+    image : Joi.string().allow(null,'').max(200).required(),
 }).unknown(true)
 const updateSchema = Joi.object().keys({
-    todo_id : Joi.string().max(50).required(),
-    todo_name : Joi.string().max(200).required(),
+    todo_header_id : Joi.string().max(50).required(),
+    title : Joi.string().max(200).required(),
+    description : Joi.string().max(200).required(),
+    image : Joi.string().allow(null,'').max(200).required(),
 }).unknown(true)
 const deleteItemSchema = Joi.object()
   .keys({
-    todo_id: Joi.string().max(50).required(),
+    todo_header_id: Joi.string().max(50).required(),
   })
   .unknown(true);
 const statusItemSchema = Joi.object()
   .keys({
-    todo_id: Joi.string().max(50).required(),
+    todo_header_id: Joi.string().max(50).required(),
     status: Joi.boolean().required(),
   })
   .unknown(true);

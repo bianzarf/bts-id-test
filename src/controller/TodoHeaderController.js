@@ -1,8 +1,8 @@
-const { search, getOneTodo, insertTodo, updateTodo, deleteTodo, getTodoByTodoHeader } = require("../model/Todo")
+const { search, getOneTodoHeader, insertTodoHeader, updateTodoHeader, deleteTodoHeader } = require("../model/TodoHeader")
 const { getTodoDetailByTodo, updateTodoDetail } = require("../model/TodoDetail")
-const { getOneTodoHeader, updateTodoHeader } = require("../model/TodoHeader")
 const { BadRequest, Ok, InternalServerErr, Unauthorized, SearchOk } = require("../util/ResponseUtil")
 const StringUtil = require("../util/StringUtil")
+const { getTodoByTodoHeader, updateTodo } = require("../model/Todo")
 
 class TodoController {
     async doSearch(req, res) {
@@ -11,7 +11,10 @@ class TodoController {
             const { page, perPage, totalPages, totalRows, result } = search(param)
 
             for(let r of result){
-                r.detail = getTodoDetailByTodo({todo_id : r.todo_id})
+                r.todos = getTodoByTodoHeader({todo_header_id : r.todo_header_id})
+                for(let todo of r.todos){
+                    todo.detail = getTodoDetailByTodo(todo)
+                }
             }
 
             SearchOk(res, page, perPage, totalRows, totalPages, result)
@@ -26,15 +29,18 @@ class TodoController {
     async doGetDetail(req, res){
         const param = req.params
         try {
-            let todoObj = getOneTodo(param)
-            if(!todoObj){
+            let todoHeaderObj = getOneTodoHeader(param)
+            if(!todoHeaderObj){
                 BadRequest(res, "Data not found")
                 return
             }
 
-            let result = {...todoObj}
+            let result = {...todoHeaderObj}
 
-            result.detail = getTodoDetailByTodo({todo_id : param.todo_id})
+            result.todos = getTodoByTodoHeader({todo_header_id : param.todo_header_id})
+            for(let todo of result.todos){
+                todo.detail = getTodoDetailByTodo(todo)
+            }
 
             Ok(res, "Data Found", result)
 
@@ -49,10 +55,10 @@ class TodoController {
         const param = req.body
         try {
 
-            param.todo_id = StringUtil.getUUID()
+            param.todo_header_id = StringUtil.getUUID()
             param.created_by = req.user.username
             param.status = false
-            insertTodo(param)
+            insertTodoHeader(param)
 
             Ok(res, "Insert Success")
 
@@ -66,15 +72,17 @@ class TodoController {
     async doUpdate(req, res){
         const param = req.body
         try {
-            let todoObj = getOneTodo({todo_id : param.todo_id})
-            if(!todoObj){
+            let todoHeaderObj = getOneTodoHeader({todo_header_id : param.todo_header_id})
+            if(!todoHeaderObj){
                 BadRequest(res, "Data not found")
                 return
             }
 
-            todoObj.todo_name = param.todo_name
+            todoHeaderObj.title = param.title
+            todoHeaderObj.description = param.description
+            todoHeaderObj.image = param.image
 
-            updateTodo(todoObj)
+            updateTodoHeader(todoHeaderObj)
 
             Ok(res, "Update Success")
 
@@ -88,44 +96,29 @@ class TodoController {
     async doUpdateStatus(req, res){
         const param = req.body
         try {
-            let todoObj = getOneTodo({todo_id : param.todo_id})
-            if(!todoObj){
+            let todoHeaderObj = getOneTodoHeader({todo_header_id : param.todo_header_id})
+            if(!todoHeaderObj){
                 BadRequest(res, "Data not found")
                 return
             }
 
-            let result = {...todoObj} 
+            let result = {...todoHeaderObj}
             result.status = param.status
 
-            let todoDetails = getTodoDetailByTodo(result)
-            for(let todoD of todoDetails){
-                let paramD = {...todoD}
-                paramD.status = param.status
-
-                updateTodoDetail(paramD)
+            let todos = getTodoByTodoHeader(result)
+            for(let todo of todos){
+                let paramTodoUpdate = {...todo}
+                paramTodoUpdate.status = param.status
+                let todoDetails = getTodoDetailByTodo({todo_id : todo.todo_id})
+                for(let todoDet of todoDetails){
+                    let paramDet = {...todoDet}
+                    paramDet.status = param.status
+                    updateTodoDetail(paramDet)
+                }
+                updateTodo(paramTodoUpdate)
             }
 
-            updateTodo(result)
-
-            // check if all todo is true or false
-            let todoHeaderObj = getOneTodoHeader({todo_header_id : todoObj.todo_header_id})
-            let todos = getTodoByTodoHeader({todo_header_id : todoObj.todo_header_id})
-            let isAllTrue = todos.filter(obj => obj.status == true)
-            if(isAllTrue.length == todos.length){
-                if(todoHeaderObj){
-                    let paramTodoHeader = {...todoHeaderObj}
-                    paramTodoHeader.status = true
-
-                    updateTodoHeader(paramTodoHeader)
-                }
-            }else{
-                if(todoHeaderObj){
-                    let paramTodoHeader = {...todoHeaderObj}
-                    paramTodoHeader.status = false
-
-                    updateTodoHeader(paramTodoHeader)
-                }
-            }
+            updateTodoHeader(result)
 
             Ok(res, "Update Success")
 
@@ -141,9 +134,9 @@ class TodoController {
         try {
             for (let i = 0; i < params.length; i++) {
                 let param = params[i]
-                let todoObj = getOneTodo({todo_id : param.todo_id})
-                if(todoObj)
-                    deleteTodo(todoObj)
+                let todoHeaderObj = getOneTodoHeader({todo_header_id : param.todo_header_id})
+                if(todoHeaderObj)
+                    deleteTodoHeader(todoHeaderObj)
             }
 
             Ok(res, "Delete Success")

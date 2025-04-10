@@ -1,5 +1,6 @@
-const { getOneTodo, insertTodo, updateTodo, deleteTodo } = require("../model/Todo")
-const { search, insertTodoDetail, getOneTodoDetail, updateTodoDetail, deleteTodoDetail } = require("../model/TodoDetail")
+const { getOneTodo, insertTodo, updateTodo, deleteTodo, getTodoByTodoHeader } = require("../model/Todo")
+const { search, insertTodoDetail, getOneTodoDetail, updateTodoDetail, deleteTodoDetail, getTodoDetailByTodo } = require("../model/TodoDetail")
+const { getOneTodoHeader, updateTodoHeader } = require("../model/TodoHeader")
 const { BadRequest, Ok, InternalServerErr, Unauthorized, SearchOk } = require("../util/ResponseUtil")
 const StringUtil = require("../util/StringUtil")
 
@@ -67,15 +68,59 @@ class TodoController {
     async doUpdateStatus(req, res){
         const param = req.body
         try {
-            let todoDEtailObj = getOneTodoDetail({todo_detail_id : param.todo_detail_id})
-            if(!todoDEtailObj){
+            let todoDetailObj = getOneTodoDetail({todo_detail_id : param.todo_detail_id})
+            if(!todoDetailObj){
                 BadRequest(res, "Data not found")
                 return
             }
 
-            todoDEtailObj.status = param.status
+            let result = {...todoDetailObj}
+            result.status = param.status
 
-            updateTodo(todoDEtailObj)
+            updateTodoDetail(result)
+
+            // check if all todo detail is true or false
+
+            // todo
+            let todoObj = getOneTodo({todo_id : todoDetailObj.todo_id})
+            let todoDetails = getTodoDetailByTodo({todo_id : todoDetailObj.todo_id})
+            let isAllTrue = todoDetails.filter(obj => obj.status == true)
+            if(isAllTrue.length == todoDetails.length){
+                if(todoObj){
+                    let paramTodo = {...todoObj}
+                    paramTodo.status = true
+
+                    updateTodo(paramTodo)
+                }
+            }else{
+                if(todoObj){
+                    let paramTodo = {...todoObj}
+                    paramTodo.status = false
+
+                    updateTodo(paramTodo)
+                }
+            }
+
+            // todo header
+            let todoHeaderObj = getOneTodoHeader({todo_header_id : todoObj.todo_header_id})
+            let todos = getTodoByTodoHeader({todo_header_id : todoObj.todo_header_id})
+            let isAllTrueHeader = todos.filter(obj => obj.status == true)
+            if(isAllTrueHeader.length == todos.length){
+                if(todoHeaderObj){
+                    let paramTodoHeader = {...todoHeaderObj}
+                    paramTodoHeader.status = true
+
+                    updateTodoHeader(paramTodoHeader)
+                }
+            }else{
+                if(todoHeaderObj){
+                    let paramTodoHeader = {...todoHeaderObj}
+                    paramTodoHeader.status = false
+
+                    updateTodoHeader(paramTodoHeader)
+                }
+            }
+
 
             Ok(res, "Update Success")
 
