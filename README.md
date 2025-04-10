@@ -1,4 +1,8 @@
 # Setup
+``
+node js version : 22.13.1
+``
+
 ### Install packages
 ``
 npm install
