@@ -1,2 +1,11 @@
-# bts-id-test
-Todo APP BTS.id Test
+# Setup
+### Install packages
+``
+npm install
+``
+
+# Dev
+### How to run
+``
+npm run watch 
+``
